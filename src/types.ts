@@ -2,10 +2,10 @@ export interface Shipment {
   id?: string;
   trackingNumber: string;
   status: string;
-  stage: string;
+  stage?: string;
   isPaused: boolean;
   holdReason: string;
-  paymentStatus: string;
+  paymentStatus?: string;
   estimatedDelivery: string;
   verified?: boolean;
   lastUpdated?: string;
@@ -15,9 +15,9 @@ export interface Shipment {
     phone: string;
     address: string;
     city: string;
-    state: string;
+    state?: string;
     country: string;
-    postal: string;
+    postal?: string;
   };
   receiver: {
     name: string;
@@ -25,19 +25,19 @@ export interface Shipment {
     phone: string;
     address: string;
     city: string;
-    state: string;
+    state?: string;
     country: string;
-    postal: string;
+    postal?: string;
   };
   package: {
     title: string;
-    description: string;
+    description?: string;
     weight: string;
     quantity: number;
-    category: string;
+    category?: string;
     shippingMethod: string;
-    deliveryType: string;
-    fragile: boolean;
+    deliveryType?: string;
+    fragile?: boolean;
     priority: string;
   };
   origin: {

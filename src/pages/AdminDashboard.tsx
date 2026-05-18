@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
-import { collection, query, getDocs, addDoc, serverTimestamp, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { db, auth } from "../lib/firebase";
 import { Shipment } from "../types";
 import { 
-  Package, Plus, Search, Filter, LogOut, ChevronRight, 
-  Trash2, Edit, CheckCircle, Clock, AlertTriangle, Truck, User
+  Package, Plus, Search, Filter, LogOut,
+  Trash2, Edit, CheckCircle, AlertTriangle, Truck, User
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
 
 export default function AdminDashboard() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -16,8 +13,11 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkAuth();
-    fetchShipments();
+    const init = async () => {
+      await checkAuth();
+      await fetchShipments();
+    };
+    init();
   }, []);
 
   const checkAuth = async () => {
@@ -32,10 +32,11 @@ export default function AdminDashboard() {
   const fetchShipments = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, "shipments"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Shipment));
-      setShipments(data);
+      const res = await fetch("/api/admin/shipments");
+      if (res.ok) {
+        const data = await res.json();
+        setShipments(data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,8 +51,14 @@ export default function AdminDashboard() {
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this shipment?")) {
-      await deleteDoc(doc(db, "shipments", id));
-      fetchShipments();
+      try {
+        const res = await fetch(`/api/admin/shipments/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          fetchShipments();
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 

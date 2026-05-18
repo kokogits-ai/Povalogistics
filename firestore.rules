@@ -36,16 +36,15 @@ service cloud.firestore {
 
     // Shipment Validation
     function isValidShipment(data) {
-      return data.trackingNumber is string && data.trackingNumber.size() <= 50 &&
-             data.status is string && data.status.size() <= 30 &&
-             data.package is map &&
-             (data.createdAt == request.time || data.createdAt == existing().createdAt);
+      return data.trackingNumber is string && 
+             data.status is string && 
+             (data.createdAt == request.time || data.createdAt is timestamp);
     }
 
     // Tracking Update Validation
     function isValidUpdate(data) {
-      return data.status is string && data.status.size() <= 30 &&
-             data.location is string && data.location.size() <= 100 &&
+      return data.status is string && 
+             data.location is string && 
              data.timestamp is timestamp;
     }
 

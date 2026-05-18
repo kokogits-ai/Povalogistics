@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { useParams, useNavigate } from "react-router-dom";
 import { Shipment, TrackingUpdate } from "../types";
 import { 
   Truck, User, MapPin, Package, Calendar, Activity, 
-  Info, ShieldCheck, Phone, Mail, Clock, Printer, CreditCard, 
-  Globe, ChevronLeft, AlertTriangle
+  Info, ShieldCheck, Phone, Mail, Printer,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
-import { motion } from "motion/react";
 import MapDisplay from "../components/Map";
 
 export default function TrackingPage() {
@@ -24,26 +21,19 @@ export default function TrackingPage() {
     async function fetchData() {
       if (!trackingId) return;
       try {
-        const shipmentsRef = collection(db, "shipments");
-        const q = query(shipmentsRef, where("trackingNumber", "==", trackingId));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          setError("No shipment found with this tracking number.");
-          setLoading(false);
+        const res = await fetch(`/api/shipments/${trackingId}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setError("No shipment found with this tracking number.");
+          } else {
+            setError("An error occurred while fetching tracking info.");
+          }
           return;
         }
 
-        const docSnap = querySnapshot.docs[0];
-        const shipmentData = { id: docSnap.id, ...docSnap.data() } as Shipment;
-        setShipment(shipmentData);
-
-        // Fetch updates
-        const updatesRef = collection(db, `shipments/${docSnap.id}/updates`);
-        const qUpdates = query(updatesRef, orderBy("timestamp", "desc"));
-        const updatesSnapshot = await getDocs(qUpdates);
-        const updatesData = updatesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as TrackingUpdate));
-        setUpdates(updatesData);
+        const data = await res.json();
+        setShipment(data);
+        setUpdates(data.updates || []);
       } catch (err: any) {
         console.error(err);
         setError("An error occurred while fetching tracking info.");
@@ -53,6 +43,18 @@ export default function TrackingPage() {
     }
     fetchData();
   }, [trackingId]);
+
+  const formatDate = (date: any) => {
+    if (!date) return "N/A";
+    const d = new Date(date);
+    return format(d, "MMM dd, yyyy");
+  };
+
+  const formatTime = (date: any) => {
+    if (!date) return "N/A";
+    const d = new Date(date);
+    return format(d, "HH:mm");
+  };
 
   if (loading) return (
     <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900 justify-center items-center">
@@ -227,11 +229,11 @@ export default function TrackingPage() {
             </div>
             
             {/* Shipment Images */}
-            {(shipment as any).images && (shipment as any).images.length > 0 && (
+            {shipment.images && shipment.images.length > 0 && (
               <div className="mt-10 pt-10 border-t border-slate-100">
                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-4">Package Identity Tokens</p>
                  <div className="flex flex-wrap gap-4">
-                    {(shipment as any).images.map((img: string, i: number) => (
+                    {shipment.images.map((img: string, i: number) => (
                       <div key={i} className="w-32 h-20 bg-slate-50 rounded-xl overflow-hidden border border-slate-200 group">
                          <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                       </div>
@@ -248,7 +250,7 @@ export default function TrackingPage() {
             <div className="p-8 border-b border-white/10 shrink-0">
               <h2 className="font-black tracking-tight text-xl mb-1 uppercase">Logistics Timeline</h2>
               <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">
-                Last Relay: {shipment.updatedAt ? format(shipment.updatedAt.toDate(), "hh:mm a") : "SYNCING"}
+                Last Relay: {shipment.updatedAt ? formatTime(shipment.updatedAt) : "SYNCING"}
               </p>
             </div>
             <div className="flex-1 p-8 space-y-10 overflow-y-auto relative custom-scrollbar-white">
@@ -274,8 +276,8 @@ export default function TrackingPage() {
                         {update.status}
                       </p>
                       <p className="text-[11px] text-[#FF6321] font-black uppercase tracking-wider mb-2">
-                        {update.location} &bull; {format(update.timestamp.toDate(), "MMM dd")}
-                        <span className="text-white/30 ml-2">{format(update.timestamp.toDate(), "HH:mm")}</span>
+                        {update.location} &bull; {formatDate(update.timestamp)}
+                        <span className="text-white/30 ml-2">{formatTime(update.timestamp)}</span>
                       </p>
                       <p className="text-xs text-white/40 leading-relaxed font-medium">
                         {update.description}

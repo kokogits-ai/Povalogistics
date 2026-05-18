@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, LogIn, ShieldCheck, Mail, Key } from "lucide-react";
+import { Lock, LogIn, ShieldCheck, Mail, Key, AlertTriangle } from "lucide-react";
+import { motion } from "motion/react";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../lib/firebase";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -14,6 +17,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
     try {
+      // 1. Server-side login (for cookies/session)
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -22,12 +26,34 @@ export default function AdminLogin() {
       
       const data = await res.json();
       if (res.ok && data.success) {
+        // 2. Client-side Firebase Auth login (for Firestore/Storage rules)
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (authErr: any) {
+          // If user doesn't exist in Firebase yet, try to create them (First time setup)
+          if (authErr.code === "auth/user-not-found" || authErr.code === "auth/invalid-credential") {
+            try {
+              await createUserWithEmailAndPassword(auth, email, password);
+            } catch (createErr: any) {
+              console.error("Firebase Auth creation failed:", createErr);
+              // We might still navigate if server auth succeeded, but Firestore will fail.
+              // So we show an error.
+              setError("Firebase Auth synchronization failed. Contact system admin.");
+              setLoading(false);
+              return;
+            }
+          } else {
+            throw authErr;
+          }
+        }
+        
         navigate("/admin");
       } else {
         setError(data.message || "Invalid credentials");
       }
     } catch (err: any) {
-      setError("Network error. Please try again.");
+      console.error(err);
+      setError("Network or Authentication error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -130,6 +156,3 @@ function Label({ children }: { children: React.ReactNode }) {
     </label>
   );
 }
-
-import { AlertTriangle } from "lucide-react";
-import { motion } from "motion/react";
