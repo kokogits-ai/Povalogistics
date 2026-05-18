@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn(); // Simplified for now
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'admin@pova.com' || 
+        request.auth.token.email == 'avotv2020@gmail.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Shipment Validation
+    function isValidShipment(data) {
+      return data.trackingNumber is string && data.trackingNumber.size() <= 50 &&
+             data.status is string && data.status.size() <= 30 &&
+             data.package is map &&
+             (data.createdAt == request.time || data.createdAt == existing().createdAt);
+    }
+
+    // Tracking Update Validation
+    function isValidUpdate(data) {
+      return data.status is string && data.status.size() <= 30 &&
+             data.location is string && data.location.size() <= 100 &&
+             data.timestamp is timestamp;
+    }
+
+    // Shipments Collection
+    match /shipments/{shipmentId} {
+      // Public can read if they know the tracking ID
+      allow get: if true;
+      // List shipments only for admins
+      allow list: if isAdmin();
+      
+      allow create: if isAdmin() && isValidShipment(incoming());
+      allow update: if isAdmin() && isValidShipment(incoming());
+      allow delete: if isAdmin();
+
+      // Subcollection: Updates
+      match /updates/{updateId} {
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin() && isValidUpdate(incoming());
+      }
+      
+      // Subcollection: Images
+      match /images/{imageId} {
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin();
+      }
+    }
+  }
+}

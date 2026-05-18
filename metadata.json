@@ -1,0 +1,8 @@
+{
+  "name": "Pova Logistics",
+  "description": "A premium logistics tracking and management dashboard with real-time shipment updates, admin controls, and public tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

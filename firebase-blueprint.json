@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Shipment": {
+      "title": "Shipment",
+      "description": "A logistics shipment document",
+      "type": "object",
+      "properties": {
+        "trackingNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "stage": { "type": "string" },
+        "isPaused": { "type": "boolean" },
+        "holdReason": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "estimatedDelivery": { "type": "string" },
+        "sender": { "type": "object" },
+        "receiver": { "type": "object" },
+        "package": { "type": "object" },
+        "origin": { "type": "object" },
+        "destination": { "type": "object" },
+        "current": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["trackingNumber", "status", "sender", "receiver", "package"]
+    },
+    "TrackingUpdate": {
+      "title": "TrackingUpdate",
+      "description": "An update in the shipment timeline",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["status", "location", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/shipments/{shipmentId}": {
+      "schema": "Shipment",
+      "description": "Core shipment documents"
+    },
+    "/shipments/{shipmentId}/updates/{updateId}": {
+      "schema": "TrackingUpdate",
+      "description": "Timeline updates for a shipment"
+    }
+  }
+}
